@@ -407,172 +407,122 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyDE1V9V4w0YbqJBgkeI7F4fN3sW_YokVBQ",
-        authDomain: "midiaindoor-d2109.firebaseapp.com",
-        databaseURL: "https://midiaindoor-d2109-default-rtdb.firebaseio.com",
-        projectId: "midiaindoor-d2109",
-        storageBucket: "midiaindoor-d2109.firebasestorage.app",
-        messagingSenderId: "549200922225",
-        appId: "1:549200922225:web:731664468eb51fbdf2bdd0",
-    };
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDE1V9V4w0YbqJBgkeI7F4fN3sW_YokVBQ",
+            authDomain: "midiaindoor-d2109.firebaseapp.com",
+            databaseURL: "https://midiaindoor-d2109-default-rtdb.firebaseio.com",
+            projectId: "midiaindoor-d2109",
+            storageBucket: "midiaindoor-d2109.firebasestorage.app",
+            messagingSenderId: "549200922225",
+            appId: "1:549200922225:web:731664468eb51fbdf2bdd0",
+        };
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const database = firebase.database();
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
 
-    auth.onAuthStateChanged(async user => {
-        if (!user) {
-            window.location.href = 'login.html';
-            return;
-        }
+        auth.onAuthStateChanged(async user => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
 
-        const params = new URLSearchParams(window.location.search);
-        const empresaId = params.get('empresa') || localStorage.getItem('empresaId') || 'empresa1';
-        localStorage.setItem('empresaId', empresaId);
+            const params = new URLSearchParams(window.location.search);
+            const empresaId = params.get('empresa') || localStorage.getItem('empresaId') || 'empresa1';
+            localStorage.setItem('empresaId', empresaId);
 
-        const storageKey = `painelId_${empresaId}`;
-        const painelId = params.get('painel') || localStorage.getItem(storageKey) || 'painel-default';
-        localStorage.setItem(storageKey, painelId);
+            const storageKey = `painelId_${empresaId}`;
+            const painelId = params.get('painel') || localStorage.getItem(storageKey) || 'painel-default';
+            localStorage.setItem(storageKey, painelId);
 
-        document.getElementById('userLabel').textContent = user.email;
-        document.getElementById('empresaLabel').textContent = 'empresa: ' + empresaId;
+            document.getElementById('userLabel').textContent = user.email;
+            document.getElementById('empresaLabel').textContent = 'empresa: ' + empresaId;
 
-        iniciarMonitoramento(empresaId, painelId);
-    });
+            iniciarMonitoramento(empresaId, painelId);
+        });
 
-function iniciarMonitoramento(empresaId, painelId) {
-    const iconConexao = document.getElementById("iconConexao");
-    const textConexao = document.getElementById("statusConexao");
+        function iniciarMonitoramento(empresaId, painelId) {
+            const iconConexao = document.getElementById("iconConexao");
+            const textConexao = document.getElementById("statusConexao");
+            const iconPainel = document.getElementById("iconPainel");
+            const textPainel = document.getElementById("textPainel");
+            const lastSyncEl = document.getElementById("lastSync");
 
-    const iconPainel = document.getElementById("iconPainel");
-    const textPainel = document.getElementById("textPainel");
-    const lastSyncEl = document.getElementById("lastSync");
+            let ultimoTimestamp = 0;
+            const LIMITE_INATIVIDADE = 2 * 60 * 1000;
 
-    let ultimoTimestamp = 0;
-    const LIMITE_INATIVIDADE = 2 * 60 * 1000; // 2 minutos
+            // 🔌 Status da internet
+            database.ref('.info/connected').on('value', snap => {
+                const online = snap.val();
+                if (iconConexao) iconConexao.style.backgroundColor = online ? "#22c55e" : "#9ca3af";
+                if (textConexao) textConexao.innerText = online ? "Conexão: Online" : "Conexão: Offline";
+            });
 
-    // 🔌 Status da internet
-    firebase.database().ref('.info/connected').on('value', snap => {
-        const online = snap.val();
+            // 📡 Última atividade do painel
+            const pathLogs = `exibicoes/${empresaId}/${painelId}`;
+            database.ref(pathLogs).limitToLast(1).on('value', snap => {
+                const data = snap.val();
+                if (data) {
+                    const ultimoLog = Object.values(data)[0];
+                    if (ultimoLog?.timestamp) {
+                        ultimoTimestamp = ultimoLog.timestamp;
+                        if (lastSyncEl) {
+                            lastSyncEl.innerText = `Última sincronização: ${new Date(ultimoTimestamp).toLocaleString('pt-BR')}`;
+                        }
+                    }
+                } else {
+                    if (lastSyncEl) lastSyncEl.innerText = "Última sincronização: Sem registros";
+                }
+                atualizarStatusPainel();
+            });
 
-        if (iconConexao)
-            iconConexao.style.backgroundColor = online ? "#22c55e" : "#9ca3af";
+            function atualizarStatusPainel() {
+                const agora = Date.now();
+                const ativo = ultimoTimestamp > 0 && (agora - ultimoTimestamp) <= LIMITE_INATIVIDADE;
 
-        if (textConexao)
-            textConexao.innerText = online
-                ? "Conexão: Online"
-                : "Conexão: Offline";
-    });
-
-    // 📡 Última atividade do painel
-    const pathLogs = `exibicoes/${empresaId}/${painelId}`;
-
-    firebase.database().ref(pathLogs).limitToLast(1).on('value', snap => {
-        const data = snap.val();
-
-        if (data) {
-            const ultimoLog = Object.values(data)[0];
-            if (ultimoLog?.timestamp) {
-                ultimoTimestamp = ultimoLog.timestamp;
-
-                if (lastSyncEl) {
-                    lastSyncEl.innerText =
-                        `Última sincronização: ${new Date(ultimoTimestamp)
-                            .toLocaleString('pt-BR')}`;
+                if (iconPainel) iconPainel.style.backgroundColor = ativo ? "#22c55e" : "#ef4444";
+                if (textPainel) {
+                    if (ativo) {
+                        textPainel.innerText = "Painel de Exibição: Online";
+                    } else if (ultimoTimestamp > 0) {
+                        const minutos = Math.floor((agora - ultimoTimestamp) / 60000);
+                        textPainel.innerText = `Painel de Exibição: Offline (inativo há ${minutos} min)`;
+                    } else {
+                        textPainel.innerText = "Painel de Exibição: Offline";
+                    }
                 }
             }
+            setInterval(atualizarStatusPainel, 30000);
         }
-        atualizarStatusPainel();
-    });
 
-    function atualizarStatusPainel() {
-        const agora = Date.now();
-        const ativo =
-            ultimoTimestamp > 0 &&
-            (agora - ultimoTimestamp) <= LIMITE_INATIVIDADE;
-
-        if (iconPainel)
-            iconPainel.style.backgroundColor = ativo ? "#22c55e" : "#ef4444";
-
-        if (textPainel) {
-            if (ativo) {
-                textPainel.innerText = "Painel de Exibição: Online";
-            } else if (ultimoTimestamp > 0) {
-                const minutos = Math.floor(
-                    (agora - ultimoTimestamp) / 60000
-                );
-                textPainel.innerText =
-                    `Painel de Exibição: Offline (inativo há ${minutos} min)`;
-            } else {
-                textPainel.innerText = "Painel de Exibição: Offline";
-            }
-        }
-    }
-
-    setInterval(atualizarStatusPainel, 30000);
-}
-
-
-
-    // 1. STATUS DA CONEXÃO LOCAL
-    database.ref('.info/connected').on('value', snap => {
-        iconConexao.style.backgroundColor = snap.val() ? "#22c55e" : "gray";
-        textConexao.innerText = snap.val() ? "Conexão: Online" : "Conexão: Offline";
-    });
-
-    // 2. STATUS EM TEMPO REAL (Via nó statusPainel)
-    database.ref(`statusPainel/${painelId}`).on('value', snap => {
-        const val = snap.val();
-        statusRealtime = (val && val.online === true);
-        atualizarInterfacePainel();
-    });
-
-    // 3. ÚLTIMA ATIVIDADE (Via Logs de Exibição)
-    const pathLogs = `exibicoes/${empresaId}/${painelId}`;
-    database.ref(pathLogs).limitToLast(1).on('value', snap => {
-        const val = snap.val();
-        if (val) {
-            const ultimoLog = Object.values(val)[0];
-            if (ultimoLog && ultimoLog.timestamp) {
-                ultimoTimestampLog = ultimoLog.timestamp;
-                const dataHora = new Date(ultimoTimestampLog).toLocaleString();
-                lastSyncEl.innerText = `Última sincronização: ${dataHora}`;
-            }
-        } else {
-            lastSyncEl.innerText = "Última sincronização: Sem registros";
-        }
-        atualizarInterfacePainel();
-    });
-
-    // Verificador de tempo: Roda a cada 30 segundos para checar se o log "esfriou"
-    setInterval(atualizarInterfacePainel, 30000);
-
-
-    // Ações dos Cards e Logout
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        if (confirm('Deseja realmente sair?')) {
-            auth.signOut().then(() => {
-                localStorage.clear();
-                window.location.href = 'login.html';
-            });
-        }
-    });
-
-    document.querySelectorAll('.card').forEach(card => {
-        card.addEventListener('click', (e) => {
-            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-            const href = card.getAttribute('data-href');
-            if (href) {
-                const empresa = localStorage.getItem('empresaId');
-                const sep = href.includes('?') ? '&' : '?';
-                window.location.href = `${href}${sep}empresa=${empresa}`;
+        // Lógica do Botão Sair
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            if (confirm('Deseja realmente sair?')) {
+                auth.signOut().then(() => {
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                }).catch(error => {
+                    console.error("Erro ao sair:", error);
+                    // Redireciona mesmo se houver erro no Firebase para garantir a saída do usuário
+                    window.location.href = 'login.html';
+                });
             }
         });
-    });
-</script>
+
+        // Ações dos Cards
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+                const href = card.getAttribute('data-href');
+                if (href) {
+                    const empresa = localStorage.getItem('empresaId');
+                    const sep = href.includes('?') ? '&' : '?';
+                    window.location.href = `${href}${sep}empresa=${empresa}`;
+                }
+            });
+        });
+    </script>
 </body>
+
 </html>
-
-
