@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Central de Gerenciamento</title>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --card: #ffffff;
+            --primary: #0b63a5;
+            --accent: #144a86;
+            --muted: #6b7280;
+            --radius: 12px;
+            --shadow-sm: 0 6px 18px rgba(16, 24, 40, 0.06);
+            --shadow-lg: 0 18px 40px rgba(16, 24, 40, 0.08);
+            --glass: rgba(255, 255, 255, 0.85);
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+            color: #0f172a;
+            display: flex;
+            justify-content: center;
+            padding: 32px 18px;
+        }
+
+        .shell {
+            width: 100%;
+            max-width: 1180px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.99));
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(2, 6, 23, 0.03);
+        }
+
+        header {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .brand {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .logo-wrap {
+            width: 68px;
+            height: 68px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #ffffff, rgba(255, 255, 255, 0.5));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            box-shadow: 0 8px 26px rgba(11, 99, 165, 0.08);
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 20px;
+            color: var(--accent);
+            letter-spacing: -0.2px;
+        }
+
+        .brand p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .badge {
+            background: linear-gradient(90deg, #eff8ff, #f5fbff);
+            color: var(--primary);
+            padding: 6px 11px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 12px;
+            border: 1px solid rgba(11, 99, 165, 0.06);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            text-align: right;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .user-info .who {
+            font-weight: 700;
+            color: #072038;
+            font-size: 14px;
+        }
+
+        .status-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+
+        .status-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            border: 1px solid rgba(2, 6, 23, 0.03);
+            box-shadow: var(--shadow-sm);
+            min-width: 220px;
+        }
+
+        .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ddd;
+            box-shadow: 0 2px 6px rgba(2, 6, 23, 0.06);
+        }
+
+        .status-text {
+            font-weight: 700;
+            color: #0b2b40;
+            font-size: 14px;
+        }
+
+        main {
+            margin-top: 6px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .card {
+            background: linear-gradient(180deg, #fff, #fbfdff);
+            border-radius: 14px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid rgba(2, 6, 23, 0.03);
+            transition: transform .12s ease, box-shadow .12s ease;
+            box-shadow: 0 8px 20px rgba(10, 18, 28, 0.04);
+            min-height: 120px;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card .row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .title {
+            font-weight: 800;
+            font-size: 16px;
+            color: #072038;
+        }
+
+        .desc {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 22px;
+            color: white;
+            background: linear-gradient(135deg, #2ea0ff, var(--primary));
+            flex-shrink: 0;
+            box-shadow: 0 8px 20px rgba(11, 99, 165, 0.12);
+        }
+
+        .cta-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-start;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(11, 99, 165, 0.12);
+            transition: transform .08s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .btn.secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid rgba(11, 99, 165, 0.12);
+            box-shadow: none;
+        }
+
+        .btn.logout {
+            background: transparent;
+            color: #c62828;
+            border: 1px solid rgba(198, 40, 40, 0.12);
+            box-shadow: none;
+            font-weight: 800;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .footer {
+            margin-top: 18px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .small {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width:1000px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width:600px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="shell">
+        <header>
+            <div class="brand">
+                <div class="logo-wrap" aria-hidden="true">
+                    <img id="logoImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==" alt="Logo" style="height:40px;">
+                </div>
+                <div>
+                    <h1>Central de Gerenciamento</h1>
+                    <p>Ferramentas e relatórios — acesse rápido</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div class="badge">Produção</div>
+                <div class="user-info">
+                    <div class="who" id="userLabel">—</div>
+                    <div id="empresaLabel" style="font-size:12px;color:var(--muted)">empresa: —</div>
+                </div>
+                <button id="logoutBtn" class="btn logout" type="button">Sair</button>
+            </div>
+        </header>
+
+        <div class="status-row">
+            <div class="status-card">
+                <div id="iconConexao" class="dot"></div>
+                <div class="status-text" id="statusConexao">Conexão: Verificando...</div>
+            </div>
+
+            <div class="status-card">
+                <div id="iconPainel" class="dot" style="background:red"></div>
+                <div class="status-text" id="textPainel">Painel de Exibição: Offline</div>
+            </div>
+
+            <div class="status-card" style="margin-left:auto;">
+                <div class="status-text small" id="lastSync">Última sincronização: —</div>
+            </div>
+        </div>
+
+        <main>
+            <section class="grid" aria-label="Principais ferramentas">
+                <div class="card" data-href="Exibidor/painelexibidor.html">
+                    <div class="row">
+                        <div class="icon">🖥️</div>
+                        <div>
+                            <div class="title">Painel de Exibição</div>
+                            <div class="desc">Visualiza o painel principal</div>
+                        </div>
+                    </div>
+                    <div class="cta-row">
+                        <button class="btn">Abrir</button>
+                        <a class="btn secondary" href="Exibidor/painelexibidor.html" target="_blank">Nova guia</a>
+                    </div>
+                </div>
+
+                <div class="card" data-href="Pagina de Upload/painelupload.html">
+                    <div class="row">
+                        <div class="icon">🖼️</div>
+                        <div>
+                            <div class="title">Gerenciar Mídias</div>
+                            <div class="desc">Upload e organização de conteúdo</div>
+                        </div>
+                    </div>
+                    <div class="cta-row">
+                        <button class="btn">Abrir</button>
+                        <a class="btn secondary" href="Pagina de Upload/painelupload.html" target="_blank">Nova guia</a>
+                    </div>
+                </div>
+
+                <div class="card" data-href="Pagina de Upload/biblioteca.html">
+                    <div class="row">
+                        <div class="icon" style="background: linear-gradient(135deg, #6366f1, #4338ca);">📚</div>
+                        <div>
+                            <div class="title">Biblioteca</div>
+                            <div class="desc">Gerencie arquivos salvos</div>
+                        </div>
+                    </div>
+                    <div class="cta-row">
+                        <button class="btn">Abrir</button>
+                        <a class="btn secondary" href="Pagina de Upload/biblioteca.html" target="_blank">Nova guia</a>
+                    </div>
+                </div>
+
+                <div class="card" data-href="Relatório/relatorioexibicao.html">
+                    <div class="row">
+                        <div class="icon">📄</div>
+                        <div>
+                            <div class="title">Relatório de Exibições</div>
+                            <div class="desc">Exportar logs por mídia</div>
+                        </div>
+                    </div>
+                    <div class="cta-row">
+                        <button class="btn">Abrir</button>
+                        <a class="btn secondary" href="Relatório/relatorioexibicao.html" target="_blank">Nova guia</a>
+                    </div>
+                </div>
+
+                <div class="card" data-href="Relatório/terminaislog.html">
+                    <div class="row">
+                        <div class="icon">🧾</div>
+                        <div>
+                            <div class="title">Logs de Terminais</div>
+                            <div class="desc">Diagnóstico dos terminais</div>
+                        </div>
+                    </div>
+                    <div class="cta-row">
+                        <button class="btn">Abrir</button>
+                        <a class="btn secondary" href="Relatório/terminaislog.html" target="_blank">Nova guia</a>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div class="footer">
+            <div class="small">Dica: clique em "Abrir" ou "Nova guia" para acessar as ferramentas.</div>
+            <div class="small">Versão: 1.2</div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDE1V9V4w0YbqJBgkeI7F4fN3sW_YokVBQ",
+        authDomain: "midiaindoor-d2109.firebaseapp.com",
+        databaseURL: "https://midiaindoor-d2109-default-rtdb.firebaseio.com",
+        projectId: "midiaindoor-d2109",
+        storageBucket: "midiaindoor-d2109.firebasestorage.app",
+        messagingSenderId: "549200922225",
+        appId: "1:549200922225:web:731664468eb51fbdf2bdd0",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    auth.onAuthStateChanged(async user => {
+        if (!user) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const empresaId = params.get('empresa') || localStorage.getItem('empresaId') || 'empresa1';
+        localStorage.setItem('empresaId', empresaId);
+
+        const storageKey = `painelId_${empresaId}`;
+        const painelId = params.get('painel') || localStorage.getItem(storageKey) || 'painel-default';
+        localStorage.setItem(storageKey, painelId);
+
+        document.getElementById('userLabel').textContent = user.email;
+        document.getElementById('empresaLabel').textContent = 'empresa: ' + empresaId;
+
+        iniciarMonitoramento(empresaId, painelId);
+    });
+
+function iniciarMonitoramento(empresaId, painelId) {
+    const iconConexao = document.getElementById("iconConexao");
+    const textConexao = document.getElementById("statusConexao");
+
+    const iconPainel = document.getElementById("iconPainel");
+    const textPainel = document.getElementById("textPainel");
+    const lastSyncEl = document.getElementById("lastSync");
+
+    let ultimoTimestamp = 0;
+    const LIMITE_INATIVIDADE = 2 * 60 * 1000; // 2 minutos
+
+    // 🔌 Status da internet
+    firebase.database().ref('.info/connected').on('value', snap => {
+        const online = snap.val();
+
+        if (iconConexao)
+            iconConexao.style.backgroundColor = online ? "#22c55e" : "#9ca3af";
+
+        if (textConexao)
+            textConexao.innerText = online
+                ? "Conexão: Online"
+                : "Conexão: Offline";
+    });
+
+    // 📡 Última atividade do painel
+    const pathLogs = `exibicoes/${empresaId}/${painelId}`;
+
+    firebase.database().ref(pathLogs).limitToLast(1).on('value', snap => {
+        const data = snap.val();
+
+        if (data) {
+            const ultimoLog = Object.values(data)[0];
+            if (ultimoLog?.timestamp) {
+                ultimoTimestamp = ultimoLog.timestamp;
+
+                if (lastSyncEl) {
+                    lastSyncEl.innerText =
+                        `Última sincronização: ${new Date(ultimoTimestamp)
+                            .toLocaleString('pt-BR')}`;
+                }
+            }
+        }
+        atualizarStatusPainel();
+    });
+
+    function atualizarStatusPainel() {
+        const agora = Date.now();
+        const ativo =
+            ultimoTimestamp > 0 &&
+            (agora - ultimoTimestamp) <= LIMITE_INATIVIDADE;
+
+        if (iconPainel)
+            iconPainel.style.backgroundColor = ativo ? "#22c55e" : "#ef4444";
+
+        if (textPainel) {
+            if (ativo) {
+                textPainel.innerText = "Painel de Exibição: Online";
+            } else if (ultimoTimestamp > 0) {
+                const minutos = Math.floor(
+                    (agora - ultimoTimestamp) / 60000
+                );
+                textPainel.innerText =
+                    `Painel de Exibição: Offline (inativo há ${minutos} min)`;
+            } else {
+                textPainel.innerText = "Painel de Exibição: Offline";
+            }
+        }
+    }
+
+    setInterval(atualizarStatusPainel, 30000);
+}
+
+
+
+    // 1. STATUS DA CONEXÃO LOCAL
+    database.ref('.info/connected').on('value', snap => {
+        iconConexao.style.backgroundColor = snap.val() ? "#22c55e" : "gray";
+        textConexao.innerText = snap.val() ? "Conexão: Online" : "Conexão: Offline";
+    });
+
+    // 2. STATUS EM TEMPO REAL (Via nó statusPainel)
+    database.ref(`statusPainel/${painelId}`).on('value', snap => {
+        const val = snap.val();
+        statusRealtime = (val && val.online === true);
+        atualizarInterfacePainel();
+    });
+
+    // 3. ÚLTIMA ATIVIDADE (Via Logs de Exibição)
+    const pathLogs = `exibicoes/${empresaId}/${painelId}`;
+    database.ref(pathLogs).limitToLast(1).on('value', snap => {
+        const val = snap.val();
+        if (val) {
+            const ultimoLog = Object.values(val)[0];
+            if (ultimoLog && ultimoLog.timestamp) {
+                ultimoTimestampLog = ultimoLog.timestamp;
+                const dataHora = new Date(ultimoTimestampLog).toLocaleString();
+                lastSyncEl.innerText = `Última sincronização: ${dataHora}`;
+            }
+        } else {
+            lastSyncEl.innerText = "Última sincronização: Sem registros";
+        }
+        atualizarInterfacePainel();
+    });
+
+    // Verificador de tempo: Roda a cada 30 segundos para checar se o log "esfriou"
+    setInterval(atualizarInterfacePainel, 30000);
+
+
+    // Ações dos Cards e Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        if (confirm('Deseja realmente sair?')) {
+            auth.signOut().then(() => {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            });
+        }
+    });
+
+    document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+            const href = card.getAttribute('data-href');
+            if (href) {
+                const empresa = localStorage.getItem('empresaId');
+                const sep = href.includes('?') ? '&' : '?';
+                window.location.href = `${href}${sep}empresa=${empresa}`;
+            }
+        });
+    });
+</script>
+</body>
+</html>
+
+
