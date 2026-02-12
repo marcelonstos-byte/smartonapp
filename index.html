@@ -289,7 +289,9 @@
         <header>
             <div class="brand">
                 <div class="logo-wrap" aria-hidden="true">
-                    <img id="logoImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==" alt="Logo" style="height:40px;">
+                    <img id="logoImg"
+                        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+                        alt="Logo" style="height:40px;">
                 </div>
                 <div>
                     <h1>Central de Gerenciamento</h1>
@@ -334,8 +336,8 @@
                         </div>
                     </div>
                     <div class="cta-row">
-                        <button class="btn">Abrir</button>
-                        <a class="btn secondary" href="Exibidor/painelexibidor.html" target="_blank">Nova guia</a>
+                        <button class="btn btn-abrir">Abrir</button>
+                        <button class="btn secondary btn-nova-guia">Nova guia</button>
                     </div>
                 </div>
 
@@ -348,8 +350,8 @@
                         </div>
                     </div>
                     <div class="cta-row">
-                        <button class="btn">Abrir</button>
-                        <a class="btn secondary" href="Pagina de Upload/painelupload.html" target="_blank">Nova guia</a>
+                        <button class="btn btn-abrir">Abrir</button>
+                        <button class="btn secondary btn-nova-guia">Nova guia</button>
                     </div>
                 </div>
 
@@ -362,8 +364,8 @@
                         </div>
                     </div>
                     <div class="cta-row">
-                        <button class="btn">Abrir</button>
-                        <a class="btn secondary" href="Pagina de Upload/biblioteca.html" target="_blank">Nova guia</a>
+                        <button class="btn btn-abrir">Abrir</button>
+                        <button class="btn secondary btn-nova-guia">Nova guia</button>
                     </div>
                 </div>
 
@@ -376,8 +378,8 @@
                         </div>
                     </div>
                     <div class="cta-row">
-                        <button class="btn">Abrir</button>
-                        <a class="btn secondary" href="Relatório/relatorioexibicao.html" target="_blank">Nova guia</a>
+                        <button class="btn btn-abrir">Abrir</button>
+                        <button class="btn secondary btn-nova-guia">Nova guia</button>
                     </div>
                 </div>
 
@@ -390,8 +392,8 @@
                         </div>
                     </div>
                     <div class="cta-row">
-                        <button class="btn">Abrir</button>
-                        <a class="btn secondary" href="Relatório/terminaislog.html" target="_blank">Nova guia</a>
+                        <button class="btn btn-abrir">Abrir</button>
+                        <button class="btn secondary btn-nova-guia">Nova guia</button>
                     </div>
                 </div>
             </section>
@@ -442,87 +444,143 @@
             iniciarMonitoramento(empresaId, painelId);
         });
 
-        function iniciarMonitoramento(empresaId, painelId) {
-            const iconConexao = document.getElementById("iconConexao");
-            const textConexao = document.getElementById("statusConexao");
-            const iconPainel = document.getElementById("iconPainel");
-            const textPainel = document.getElementById("textPainel");
-            const lastSyncEl = document.getElementById("lastSync");
 
-            let ultimoTimestamp = 0;
-            const LIMITE_INATIVIDADE = 2 * 60 * 1000;
+function iniciarMonitoramento(empresaId, painelId) {
+    const iconConexao = document.getElementById("iconConexao");
+    const textConexao = document.getElementById("statusConexao");
+    const iconPainel = document.getElementById("iconPainel");
+    const textPainel = document.getElementById("textPainel");
+    const lastSyncEl = document.getElementById("lastSync");
 
-            // 🔌 Status da internet
-            database.ref('.info/connected').on('value', snap => {
-                const online = snap.val();
-                if (iconConexao) iconConexao.style.backgroundColor = online ? "#22c55e" : "#9ca3af";
-                if (textConexao) textConexao.innerText = online ? "Conexão: Online" : "Conexão: Offline";
-            });
+    let ultimoTimestamp = 0;
+    const LIMITE_INATIVIDADE = 2 * 60 * 1000; // 2 minutos
 
-            // 📡 Última atividade do painel
-            const pathLogs = `exibicoes/${empresaId}/${painelId}`;
-            database.ref(pathLogs).limitToLast(1).on('value', snap => {
-                const data = snap.val();
-                if (data) {
-                    const ultimoLog = Object.values(data)[0];
-                    if (ultimoLog?.timestamp) {
-                        ultimoTimestamp = ultimoLog.timestamp;
-                        if (lastSyncEl) {
-                            lastSyncEl.innerText = `Última sincronização: ${new Date(ultimoTimestamp).toLocaleString('pt-BR')}`;
-                        }
-                    }
-                } else {
-                    if (lastSyncEl) lastSyncEl.innerText = "Última sincronização: Sem registros";
-                }
-                atualizarStatusPainel();
-            });
+    // 1. Status da Conexão Firebase (Sua Internet)
+    database.ref(".info/connected").on("value", snap => {
+        const online = snap.val() === true;
+        if (iconConexao) iconConexao.style.backgroundColor = online ? "#22c55e" : "#ef4444";
+        if (textConexao) textConexao.innerText = online ? "Conexão: Online" : "Conexão: Offline";
+    });
 
-            function atualizarStatusPainel() {
-                const agora = Date.now();
-                const ativo = ultimoTimestamp > 0 && (agora - ultimoTimestamp) <= LIMITE_INATIVIDADE;
+    // 2. Monitoramento do Painel
+    const pathLogs = `exibicoes/${empresaId}/${painelId}`;
+    database.ref(pathLogs).limitToLast(1).on("value", snap => {
+        const data = snap.val();
+        if (data) {
+            const ultimoLog = Object.values(data)[0];
+            
+            // --- CORREÇÃO DO INVALID DATE ---
+            // Tenta capturar o timestamp de várias formas para garantir que seja um número
+            let tsRaw = ultimoLog?.timestamp;
+            let tsParsed = Number(tsRaw);
 
-                if (iconPainel) iconPainel.style.backgroundColor = ativo ? "#22c55e" : "#ef4444";
-                if (textPainel) {
-                    if (ativo) {
-                        textPainel.innerText = "Painel de Exibição: Online";
-                    } else if (ultimoTimestamp > 0) {
-                        const minutos = Math.floor((agora - ultimoTimestamp) / 60000);
-                        textPainel.innerText = `Painel de Exibição: Offline (inativo há ${minutos} min)`;
-                    } else {
-                        textPainel.innerText = "Painel de Exibição: Offline";
-                    }
-                }
+            // Se for uma string de data (ex: "2026-02-11T..."), converte para ms
+            if (isNaN(tsParsed) && tsRaw) {
+                tsParsed = new Date(tsRaw).getTime();
             }
-            setInterval(atualizarStatusPainel, 30000);
+
+            // Se o timestamp vier em segundos (10 dígitos), converte para milissegundos (13 dígitos)
+            if (tsParsed > 0 && tsParsed < 1e12) {
+                tsParsed = tsParsed * 1000;
+            }
+
+            if (!isNaN(tsParsed) && tsParsed > 0) {
+                ultimoTimestamp = tsParsed;
+                if (lastSyncEl) {
+                    lastSyncEl.innerText = `Última sincronização: ${new Date(ultimoTimestamp).toLocaleString("pt-BR")}`;
+                }
+            } else {
+                if (lastSyncEl) lastSyncEl.innerText = "Última sincronização: Formato inválido";
+            }
+        }
+        atualizarStatusPainel();
+    });
+
+    // 3. Validação de Status (Força Vermelho se passar de 2min)
+    // 3. Validação de Status (Força Vermelho se passar de 2min)
+    function atualizarStatusPainel() {
+        const agora = Date.now();
+
+        if (ultimoTimestamp === 0) {
+            if (iconPainel) iconPainel.style.backgroundColor = "#ef4444";
+            if (textPainel) textPainel.innerText = "Painel de Exibição: Aguardando sinal...";
+            return;
         }
 
-        // Lógica do Botão Sair
+        const tempoSemSync = agora - ultimoTimestamp;
+
+        if (tempoSemSync > LIMITE_INATIVIDADE) {
+            if (iconPainel) iconPainel.style.backgroundColor = "#ef4444";
+            
+            let textoTempo;
+            const segundos = Math.floor(tempoSemSync / 1000);
+            const minutos = Math.floor(segundos / 60);
+            const horas = Math.floor(minutos / 60);
+            const dias = Math.floor(horas / 24);
+
+            if (dias > 0) {
+                textoTempo = `${dias} dia${dias > 1 ? 's' : ''}`;
+            } else if (horas > 0) {
+                textoTempo = `${horas} hora${horas > 1 ? 's' : ''}`;
+            } else {
+                textoTempo = `${minutos} min`;
+            }
+
+            if (textPainel) {
+                textPainel.innerText = `Painel de Exibição: Offline (inativo há ${textoTempo})`;
+            }
+        } else {
+            // Caso esteja dentro do tempo (ONLINE)
+            if (iconPainel) iconPainel.style.backgroundColor = "#22c55e"; 
+            if (textPainel) textPainel.innerText = "Painel de Exibição: Online";
+        }
+    } // <-- Chave que fecha a função atualizarStatusPainel
+
+    // 4. Intervalo de verificação a cada 10 segundos
+    setInterval(atualizarStatusPainel, 10000);
+
+} // <-- Chave que fecha a função iniciarMonitoramento
+
         document.getElementById('logoutBtn').addEventListener('click', () => {
             if (confirm('Deseja realmente sair?')) {
                 auth.signOut().then(() => {
                     localStorage.clear();
                     window.location.href = 'login.html';
                 }).catch(error => {
-                    console.error("Erro ao sair:", error);
-                    // Redireciona mesmo se houver erro no Firebase para garantir a saída do usuário
                     window.location.href = 'login.html';
                 });
             }
         });
 
-        // Ações dos Cards
+        // --- LÓGICA DE NAVEGAÇÃO DOS CARDS ---
         document.querySelectorAll('.card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-                const href = card.getAttribute('data-href');
-                if (href) {
-                    const empresa = localStorage.getItem('empresaId');
-                    const sep = href.includes('?') ? '&' : '?';
-                    window.location.href = `${href}${sep}empresa=${empresa}`;
-                }
+            const baseUrl = card.getAttribute('data-href');
+            
+            // Função para construir URL com parâmetros
+            const getFinalUrl = () => {
+                const empresa = localStorage.getItem('empresaId');
+                const sep = baseUrl.includes('?') ? '&' : '?';
+                return `${baseUrl}${sep}empresa=${empresa}`;
+            };
+
+            // Clique no botão "Abrir" (Mesma aba)
+            card.querySelector('.btn-abrir').addEventListener('click', (e) => {
+                e.stopPropagation(); // Evita disparar o clique do card
+                window.location.href = getFinalUrl();
+            });
+
+            // Clique no botão "Nova Guia" (Outra aba)
+            card.querySelector('.btn-nova-guia').addEventListener('click', (e) => {
+                e.stopPropagation(); // Evita disparar o clique do card
+                window.open(getFinalUrl(), '_blank');
+            });
+
+            // Clique no corpo do Card (Comportamento padrão: Abrir na mesma aba)
+            card.addEventListener('click', () => {
+                window.location.href = getFinalUrl();
             });
         });
     </script>
-</body>
+    </body>
 
 </html>
