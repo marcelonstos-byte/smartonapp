@@ -243,7 +243,8 @@
             position: fixed;
             inset: 0;
             background: #0c0c0c;
-            display: flex;
+            display: none;
+            /* inicialmente oculto - mostraremos via JS */
             flex-direction: column;
             justify-content: center;
             align-items: center;
@@ -305,6 +306,99 @@
             opacity: 0 !important;
             transition: opacity 360ms ease;
         }
+        /* ========== Modal UID (empresaId) ========== */
+        
+        #uidModal {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100000;
+            background: rgba(0, 0, 0, 0.55);
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 200ms ease, visibility 200ms;
+        }
+        
+        #uidModal.show {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        #uidModal .box {
+            background: #0b0b0b;
+            color: #fff;
+            padding: 28px;
+            border-radius: 12px;
+            width: min(720px, 92%);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            text-align: center;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        #uidModal h2 {
+            margin: 0 0 12px 0;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        
+        #uidModal p {
+            margin: 0 0 18px 0;
+            color: #cfd8dd;
+        }
+        
+        #empresaIdInput {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+            outline: none;
+            box-sizing: border-box;
+            margin-bottom: 14px;
+        }
+        
+        #uidButtons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn.primary {
+            background: #ff6a00;
+            color: white;
+        }
+        
+        .btn.ghost {
+            background: transparent;
+            color: #e0e6ed;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        /* Carregamento texto maior */
+        
+        #carregandoTexto {
+            font-size: 3.0rem;
+            font-weight: 700;
+        }
+        
+        #frase {
+            font-size: 1.6rem;
+        }
+        
+        .pontos .dot {
+            font-size: 2.0rem;
+        }
     </style>
 </head>
 
@@ -320,6 +414,18 @@
             <div class="tempo" id="tempoRodape"><span id="cidadeClima">Carregando clima...</span></div>
         </div>
     </div>
+
+    <!-- ======= Modal para solicitar UID / empresaId (aparece antes do carregamento) ======= -->
+    <div id="uidModal" role="dialog" aria-modal="true" aria-labelledby="uidTitle" aria-describedby="uidDesc">
+        <div class="box">
+            <h2 id="uidTitle">Informe o UID (empresaId)</h2>
+            <p id="uidDesc">Digite o UID/empresaId para carregar as mídias e configurações desta empresa.</p>
+            <input id="empresaIdInput" type="text" placeholder="Ex: UID123456789" />
+            <div id="uidButtons">
+                <button id="btnCancelarModal" class="btn ghost">Cancelar</button>
+                <button id="btnConfirmModal" class="btn primary">OK</button>
+            </div>
+        </div>
     </div>
 
     <style>
@@ -888,6 +994,7 @@
 
         // ---------- resolveEmpresaIdForPage (versão completa recomendada) ----------
         async function resolveEmpresaIdForPage(userUid) {
+            // prioriza query params
             const q = getQueryParam('empresa') || getQueryParam('empresaId');
             if (q) {
                 localStorage.setItem('empresaId', q);
@@ -895,6 +1002,7 @@
                 return q;
             }
 
+            // PRIORIDADE: localStorage (preenchido pelo modal)
             const ls = localStorage.getItem('empresaId');
             if (ls) {
                 atualizarParametroNaUrl('empresaId', ls);
@@ -1080,7 +1188,7 @@
         // roda no load
         window.addEventListener('load', () => {
             ajustarMidiaParaNaoPassarDoRodape();
-            // dispara carrossel etc se autenticado — já tratado em onAuthStateChanged
+            // NÃO iniciamos a tela de carregamento automaticamente aqui; controlamos via modal/start
         });
 
         // roda sempre que trocar de mídia
@@ -1093,8 +1201,7 @@
     </script>
 
     <!-- TELA DE CARREGAMENTO -->
-    <!-- TELA DE CARREGAMENTO -->
-    <div id="telaCarregamento">
+    <div id="telaCarregamento" aria-hidden="true">
         <div id="conteudoCarregamento">
             <img src="./audio/logo.png" alt="Logo" id="logoCarregamento">
             <div id="textoTerminal"></div>
@@ -1102,7 +1209,7 @@
         </div>
     </div>
 
-    <div id="carregandoOverlay" aria-live="polite">
+    <div id="carregandoOverlay" aria-live="polite" role="status" aria-hidden="true">
         <img id="logoCarregando" src="./audio/logo.png" alt="Logo" />
         <div id="carregandoTexto" class="brilho">
             <span id="frase" aria-hidden="true">&gt;Iniciando sistema</span>
@@ -1115,7 +1222,39 @@
     </div>
 
     <script>
-        (function() {
+        /**
+         * Script de controle do modal + inicialização do carregador.
+         * - Se localStorage.empresaId existir: usa direto e inicia carregamento.
+         * - Se não: mostra modal. Ao confirmar: salva, chama carregarOrientacao, e inicia carregamento.
+         */
+
+        // --- elementos do modal ---
+        const uidModal = document.getElementById('uidModal');
+        const empresaIdInput = document.getElementById('empresaIdInput');
+        const btnConfirmModal = document.getElementById('btnConfirmModal');
+        const btnCancelarModal = document.getElementById('btnCancelarModal');
+
+        function showModal() {
+            uidModal.classList.add('show');
+            empresaIdInput.focus();
+        }
+
+        function hideModal() {
+            uidModal.classList.remove('show');
+        }
+
+        function startLoadingOverlay() {
+            // mostra overlay e inicia a sequência de frases
+            const overlay = document.getElementById('carregandoOverlay');
+            overlay.style.display = 'flex';
+            overlay.setAttribute('aria-hidden', 'false');
+
+            // iniciar a sequência de frases (mesma lógica que já existia, porém acionada manualmente)
+            startCarregamentoFrases();
+        }
+
+        // Função que contém a lógica do IIFE anterior para as frases — agora acionável
+        function startCarregamentoFrases() {
             const frases = [{
                 txt: "Iniciando sistema",
                 time: 2800
@@ -1195,16 +1334,125 @@
                     logo.style.transition = 'opacity 700ms ease';
                     logo.style.opacity = '0.12';
                     overlay.style.opacity = '0';
-                    setTimeout(() => overlay.remove(), 800);
+                    setTimeout(() => {
+                        try {
+                            overlay.remove();
+                        } catch {}
+                    }, 800);
                 }, 900);
             }
 
-            window.addEventListener("load", () => {
-                setTimeout(() => showPhrase(0), 300);
-            });
-        })();
+            // start
+            setTimeout(() => showPhrase(0), 300);
+        }
 
-        // sobe todos os vídeos um pouco
+        // botões do modal
+        btnConfirmModal.addEventListener('click', () => {
+            const val = String(empresaIdInput.value || '').trim();
+            if (!val) {
+                empresaIdInput.focus();
+                return;
+            }
+            // salvar no localStorage
+            localStorage.setItem('empresaId', val);
+            // set global quickly
+            window.empresaId = val;
+
+            // aplicar orientacao já (tenta buscar no Firebase)
+            carregarOrientacao(window.empresaId).catch(() => {});
+
+            // esconder modal e iniciar carregamento
+            hideModal();
+            startLoadingOverlay();
+
+            // tirar atributo de aria-hidden do overlay para leitores
+            document.getElementById('carregandoOverlay').setAttribute('aria-hidden', 'false');
+        });
+
+        btnCancelarModal.addEventListener('click', () => {
+            // se cancelar, apenas fechar modal; não iniciar painel
+            hideModal();
+        });
+
+        // também permita Enter no input
+        empresaIdInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                btnConfirmModal.click();
+            }
+        });
+
+        // Ao carregar a página: se já há empresaId => iniciar direto; senão mostrar modal
+       window.addEventListener('DOMContentLoaded', () => {
+    const existing = localStorage.getItem('empresaId');
+
+    // 🔕 se for refresh automático, NÃO mostra boot
+    const refreshSilencioso = sessionStorage.getItem('refresh_silencioso') === 'true';
+
+    if (refreshSilencioso) {
+        console.log('♻️ Refresh silencioso detectado — pulando boot');
+        sessionStorage.removeItem('refresh_silencioso');
+
+        if (existing) {
+            window.empresaId = existing;
+            carregarOrientacao(window.empresaId).catch(() => {});
+        }
+        return; // 👈 NÃO chama startLoadingOverlay
+    }
+
+    // fluxo normal
+    if (existing) {
+        window.empresaId = existing;
+        carregarOrientacao(window.empresaId).finally(() => {
+            startLoadingOverlay();
+        });
+    } else {
+        showModal();
+    }
+});
+
+        (function refreshHoraExata() {
+
+    function msAteProximaHora() {
+        const agora = new Date();
+        const proximaHora = new Date(agora);
+
+        proximaHora.setMinutes(0, 0, 0);
+        proximaHora.setHours(agora.getHours() + 1);
+
+        return proximaHora - agora;
+    }
+
+    const tempoInicial = msAteProximaHora();
+
+    console.log('⏰ Refresh alinhado para a próxima hora em', tempoInicial / 1000, 'segundos');
+
+    // primeiro refresh: alinha na hora cheia
+    setTimeout(() => {
+        executarRefresh();
+
+        // depois disso, de 1h em 1h certinho
+        setInterval(executarRefresh, 60 * 60 * 1000);
+
+    }, tempoInicial);
+
+    function executarRefresh() {
+        try {
+            console.log('🔄 Refresh automático — hora exata');
+
+            // marca como refresh silencioso
+            sessionStorage.setItem('refresh_silencioso', 'true');
+
+            window.location.reload();
+        } catch (e) {
+            console.warn('Erro no refresh automático:', e);
+        }
+    }
+
+})();
+    </script>
+
+    <script>
+        // sobe todos os vídeos um pouco (mantive no fim, como antes)
         document.querySelectorAll('#superior .media-wrap video').forEach(v => {
             v.style.transform = 'translateY(-20px)'; // ajuste conforme necessário
             v.style.zIndex = '1000';
