@@ -4,95 +4,245 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Relatório de Logs • Smart Mídia</title>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --bg: #f8fafc;
             --card: #ffffff;
             --primary: #0f172a;
-            --success-bg: #f0fdf4;
-            --success-text: #166534;
-            --success-border: #22c55e;
-            --error-bg: #fef2f2;
-            --error-text: #991b1b;
-            --error-border: #ef4444;
+            --brand: #0b63a5;
+            --brand-dark: #074a7d;
+            --success: #22c55e;
+            --error: #ef4444;
             --muted: #64748b;
-            --radius: 12px;
+            --border: #e2e8f0;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
-        .container { max-width: 900px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 40px; }
-        header h1 { margin: 0; font-size: 28px; letter-spacing: -0.5px; }
-        header p { color: var(--muted); margin-top: 5px; font-weight: 500; }
+        * { box-sizing: border-box; transition: all 0.2s ease; }
 
-        /* Estilo dos Cards de Terminal */
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(at 0% 0%, rgba(11, 99, 165, 0.03) 0px, transparent 50%);
+            color: var(--primary);
+            padding: 40px 20px;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        /* --- Header Estilizado --- */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-info h1 { 
+            margin: 0; 
+            font-size: 24px; 
+            font-weight: 800; 
+            letter-spacing: -0.025em; 
+        }
+
+        .header-info p { 
+            margin: 4px 0 0; 
+            color: var(--muted); 
+            font-size: 14px; 
+            font-weight: 500;
+        }
+
+        .btn-back {
+            text-decoration: none;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid var(--border);
+        }
+
+        .btn-back:hover { 
+            border-color: var(--brand); 
+            color: var(--brand); 
+            box-shadow: var(--shadow-md);
+        }
+
+        /* --- Terminal Group Card --- */
         .terminal-group { 
             background: var(--card); 
-            border-radius: var(--radius); 
-            padding: 25px; 
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
-            margin-bottom: 30px; 
-            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-lg); 
+            padding: 0; 
+            box-shadow: var(--shadow-md); 
+            margin-bottom: 32px; 
+            border: 1px solid var(--border);
+            overflow: hidden;
         }
+
         .terminal-header { 
-            border-bottom: 1px solid #e2e8f0; 
-            padding-bottom: 15px; 
-            margin-bottom: 20px; 
+            background: #f1f5f9;
+            padding: 20px 25px; 
             display: flex; 
             justify-content: space-between; 
-            align-items: center; 
+            align-items: center;
+            border-bottom: 1px solid var(--border);
         }
-        .terminal-header h2 { margin: 0; font-size: 18px; color: var(--primary); }
 
-        /* Estilo dos Itens do Histórico */
+        .terminal-header h2 { 
+            margin: 0; 
+            font-size: 16px; 
+            font-weight: 700; 
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* --- Timeline Estilizada --- */
+        .timeline-container {
+            padding: 25px;
+            position: relative;
+        }
+
         .log-item { 
             display: flex; 
-            align-items: flex-start; 
-            gap: 15px; 
-            padding: 16px; 
-            border-radius: 10px; 
-            margin-bottom: 12px; 
-            border-left: 5px solid transparent;
-            transition: transform 0.2s;
+            gap: 20px; 
+            padding-bottom: 25px;
+            position: relative;
         }
-        .item-on { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
-        .item-off { background: var(--error-bg); border-color: var(--error-border); color: var(--error-text); }
-        
-        .log-icon { font-size: 20px; }
-        .log-content { flex: 1; }
-        .log-title { font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; }
-        .log-time { font-size: 13px; opacity: 0.9; margin-top: 4px; }
-        .log-duration { 
+
+        /* Linha conectora da timeline */
+        .log-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 24px;
+            width: 2px;
+            height: calc(100% - 24px);
+            background: var(--border);
+        }
+
+        .log-icon-wrap {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            z-index: 1;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .item-on .log-icon-wrap { background: #dcfce7; color: #15803d; border: 2px solid #86efac; }
+        .item-off .log-icon-wrap { background: #fee2e2; color: #b91c1c; border: 2px solid #fecaca; }
+
+        .log-content { 
+            flex: 1; 
+            background: var(--bg);
+            padding: 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .log-title { 
+            font-weight: 700; 
+            font-size: 14px;
+        }
+
+        .item-on .log-title { color: #166534; }
+        .item-off .log-title { color: #991b1b; }
+
+        .log-time { 
             font-size: 12px; 
-            margin-top: 8px; 
-            font-weight: 600; 
-            background: rgba(0,0,0,0.07); 
-            display: inline-block; 
-            padding: 2px 8px; 
-            border-radius: 4px; 
+            color: var(--muted);
+            font-weight: 500;
         }
-        
+
+        .log-duration { 
+            font-size: 11px; 
+            font-weight: 700; 
+            background: rgba(15, 23, 42, 0.05); 
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px; 
+            border-radius: 6px; 
+            color: var(--primary);
+        }
+
         /* Animação para queda ativa */
-        .critical-pulse { animation: pulse 2s infinite; border: 2px solid var(--error-border); }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .critical-pulse { 
+            animation: pulse 2s infinite; 
+            border: 2px solid var(--error); 
+            background: #fff1f2;
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+
+        /* Footer */
+        .footer-note {
+            text-align: center;
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 40px;
+        }
+
     </style>
 </head>
 <body>
 
     <div class="container">
         <header>
-            <h1>Painel de Controle de Disponibilidade</h1>
-            <p id="subtitulo">Conectando ao banco de dados...</p>
+            <div class="header-info">
+                <h1>Logs de Disponibilidade</h1>
+                <p id="subtitulo">Smart Mídia • Histórico de Conexão</p>
+            </div>
+            <a href="../index.html" class="btn-back">← Painel Principal</a>
         </header>
-        <div id="listaTerminais"></div>
+
+        <div id="listaTerminais">
+            </div>
+
+        <div class="footer-note">
+            Smart Mídia © 2026 • Monitoramento em Tempo Real
+        </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
     <script>
-        // Configuração Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDE1V9V4w0YbqJBgkeI7F4fN3sW_YokVBQ",
             authDomain: "midiaindoor-d2109.firebaseapp.com",
@@ -106,26 +256,20 @@
         const database = firebase.database();
 
         const empresaId = localStorage.getItem('empresaId') || 'EMPRESA1';
-        const LIMITE_INATIVIDADE = 2 * 60 * 1000; // 2 minutos para considerar queda
+        const LIMITE_INATIVIDADE = 2 * 60 * 1000;
 
         document.getElementById('subtitulo').innerText = `Monitorando Empresa: ${empresaId.toUpperCase()}`;
 
-        // Função de Tratamento de Timestamp (Lógica enviada)
         function tratarTimestamp(raw) {
             let ts = Number(raw);
-            if (isNaN(ts) && raw) {
-                ts = new Date(raw).getTime();
-            }
-            if (ts > 0 && ts < 1e12) {
-                ts = ts * 1000;
-            }
+            if (isNaN(ts) && raw) ts = new Date(raw).getTime();
+            if (ts > 0 && ts < 1e12) ts = ts * 1000;
             return (!isNaN(ts) && ts > 0) ? ts : null;
         }
 
         function formatarData(ts) {
             return new Date(ts).toLocaleString("pt-BR", {
-                day: '2-digit', month: '2-digit', year: 'numeric',
-                hour: '2-digit', minute: '2-digit', second: '2-digit'
+                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
             });
         }
 
@@ -134,10 +278,9 @@
             const seg = Math.floor(ms / 1000);
             const min = Math.floor(seg / 60);
             const hor = Math.floor(min / 60);
-
-            if (hor > 0) return `${hor}h ${min % 60}min`;
-            if (min > 0) return `${min} min e ${seg % 60}s`;
-            return `${seg} segundos`;
+            if (hor > 0) return `${hor}h ${min % 60}m`;
+            if (min > 0) return `${min}m ${seg % 60}s`;
+            return `${seg}s`;
         }
 
         function carregarLogs() {
@@ -146,7 +289,7 @@
             database.ref(`exibicoes/${empresaId}`).on('value', snap => {
                 const terminais = snap.val();
                 if (!terminais) {
-                    container.innerHTML = "<p style='text-align:center'>Nenhum dado encontrado.</p>";
+                    container.innerHTML = "<div style='text-align:center; padding: 50px; color: var(--muted)'>Nenhum dado de terminal encontrado.</div>";
                     return;
                 }
 
@@ -163,31 +306,27 @@
 
                     if (logsTratados.length === 0) return;
 
-                    // Criação do Elemento Visual do Terminal
                     const terminalDiv = document.createElement('div');
                     terminalDiv.className = 'terminal-group';
                     terminalDiv.innerHTML = `
                         <div class="terminal-header">
-                            <h2>📟 Terminal: ${painelId}</h2>
-                            <span id="status-badge-${painelId}">Verificando...</span>
+                            <h2>🖥️ ${painelId}</h2>
+                            <span id="badge-${painelId}" class="status-badge">Verificando...</span>
                         </div>
-                        <div id="historial-${painelId}"></div>
+                        <div class="timeline-container" id="timeline-${painelId}"></div>
                     `;
                     container.appendChild(terminalDiv);
 
-                    const historialContainer = document.getElementById(`historial-${painelId}`);
-                    const statusBadge = document.getElementById(`status-badge-${painelId}`);
+                    const timeline = document.getElementById(`timeline-${painelId}`);
+                    const badge = document.getElementById(`badge-${painelId}`);
 
-                    // --- LÓGICA DE CONSTRUÇÃO DA LINHA DO TEMPO (HISTÓRICO) ---
                     let eventos = [];
                     let inicioSessao = logsTratados[0];
                     let ultimoLogSessao = logsTratados[0];
 
                     for (let i = 1; i < logsTratados.length; i++) {
                         const gap = logsTratados[i] - ultimoLogSessao;
-
                         if (gap > LIMITE_INATIVIDADE) {
-                            // Houve uma queda: Fecha o período ON anterior e registra o período OFF
                             eventos.push({ tipo: 'ON', inicio: inicioSessao, fim: ultimoLogSessao });
                             eventos.push({ tipo: 'OFF', inicio: ultimoLogSessao, fim: logsTratados[i] });
                             inicioSessao = logsTratados[i];
@@ -195,47 +334,43 @@
                         ultimoLogSessao = logsTratados[i];
                     }
 
-                    // Verifica status atual em relação ao relógio local
                     const agora = Date.now();
-                    const tempoSemSinal = agora - ultimoLogSessao;
-                    const estaAtualmenteOffline = tempoSemSinal > LIMITE_INATIVIDADE;
+                    const estaAtualmenteOffline = (agora - ultimoLogSessao) > LIMITE_INATIVIDADE;
 
-                    // Adiciona o bloco final (período ON atual)
                     eventos.push({ tipo: 'ON', inicio: inicioSessao, fim: ultimoLogSessao });
                     
                     if (estaAtualmenteOffline) {
                         eventos.push({ tipo: 'OFF', inicio: ultimoLogSessao, fim: agora, atual: true });
-                        statusBadge.innerHTML = `<b style="color:var(--error-border)">● DESCONECTADO</b>`;
+                        badge.innerText = "Desconectado";
+                        badge.style.background = "#fee2e2";
+                        badge.style.color = "#991b1b";
                     } else {
-                        statusBadge.innerHTML = `<b style="color:var(--success-border)">● ONLINE</b>`;
+                        badge.innerText = "Online";
+                        badge.style.background = "#dcfce7";
+                        badge.style.color = "#166534";
                     }
 
-                    // Renderiza os cards do histórico (Invertido: mais recente primeiro)
                     eventos.reverse().forEach(ev => {
-                        const div = document.createElement('div');
                         const isOn = ev.tipo === 'ON';
                         const duracao = ev.fim - ev.inicio;
-
-                        // Filtro: Não mostrar períodos "Online" de 0 segundos
                         if (isOn && duracao <= 0 && !ev.atual) return;
 
-                        div.className = `log-item ${isOn ? 'item-on' : 'item-off'} ${ev.atual ? 'critical-pulse' : ''}`;
-                        div.innerHTML = `
-                            <div class="log-icon">${isOn ? '✅' : '🔴'}</div>
-                            <div class="log-content">
-                                <div class="log-title">
-                                    ${isOn ? 'Período Estável (Online)' : ev.atual ? 'SINAL PERDIDO AGORA' : 'Queda de Conexão'}
-                                    <span style="font-size:11px; font-weight:normal">${isOn ? 'Sincronizado' : 'Inativo'}</span>
-                                </div>
-                                <div class="log-time">
-                                    ${isOn ? `Início: ${formatarData(ev.inicio)}` : `Queda em: ${formatarData(ev.inicio)}`}
+                        const item = document.createElement('div');
+                        item.className = `log-item ${isOn ? 'item-on' : 'item-off'}`;
+                        
+                        item.innerHTML = `
+                            <div class="log-icon-wrap">${isOn ? '✓' : '✕'}</div>
+                            <div class="log-content ${ev.atual ? 'critical-pulse' : ''}">
+                                <div class="log-header">
+                                    <span class="log-title">${isOn ? 'Operação Normal' : ev.atual ? 'QUEDA DETECTADA' : 'Interrupção de Sinal'}</span>
+                                    <span class="log-time">${formatarData(ev.inicio)}</span>
                                 </div>
                                 <div class="log-duration">
-                                    ${isOn ? 'Tempo de atividade' : 'Tempo fora do ar'}: ${calcularDuracao(duracao)}
+                                    ⏱️ ${isOn ? 'Duração da estabilidade' : 'Duração da queda'}: ${calcularDuracao(duracao)}
                                 </div>
                             </div>
                         `;
-                        historialContainer.appendChild(div);
+                        timeline.appendChild(item);
                     });
                 });
             });
